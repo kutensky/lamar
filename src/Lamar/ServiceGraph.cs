@@ -222,7 +222,7 @@ namespace Lamar
 
         private ServiceFamily buildClosedGenericType(Type serviceType, IServiceCollection services)
         {
-            var closed = services.Where(x => x.ServiceType == serviceType).Select(Instance.For);
+            var closed = services.Where(x => x.ServiceType == serviceType && !x.ImplementationType.IsOpenGeneric()).Select(Instance.For);
 
             var templated = services
                 .Where(x => x.ServiceType.IsOpenGeneric() && serviceType.Closes(x.ServiceType))
@@ -356,7 +356,7 @@ namespace Lamar
             return ResolveFamily(serviceType)?.All ?? new Instance[0];
         }
 
-        public bool CouldBuild(Type concreteType)
+        public bool CouldBuild(Type concreteType, out string message)
         {
             var constructorInstance = new ConstructorInstance(concreteType, concreteType, ServiceLifetime.Transient);
             foreach (var policy in InstancePolicies)
@@ -364,7 +364,7 @@ namespace Lamar
                 policy.Apply(constructorInstance);
             }
             
-            var ctor = constructorInstance.DetermineConstructor(this, out string message);
+            var ctor = constructorInstance.DetermineConstructor(this, out message);
             
             
             return ctor != null && message.IsEmpty();

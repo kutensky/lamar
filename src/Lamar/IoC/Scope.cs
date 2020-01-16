@@ -1,5 +1,7 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -97,7 +99,7 @@ namespace Lamar.IoC
         internal ServiceGraph ServiceGraph { get; set;}
 
 
-        public List<IDisposable> Disposables { get; } = new List<IDisposable>();
+        public ConcurrentBag<IDisposable> Disposables { get; } = new ConcurrentBag<IDisposable>();
 
         internal readonly Dictionary<int, object> Services = new Dictionary<int, object>();
 
@@ -112,7 +114,7 @@ namespace Lamar.IoC
             if (_hasDisposed) return;
             _hasDisposed = true;
 
-            foreach (var disposable in Disposables)
+            foreach (var disposable in Disposables.Distinct())
             {
                 disposable.SafeDispose();
             }
@@ -142,6 +144,14 @@ namespace Lamar.IoC
 
             if (resolver == null)
             {
+                if (ServiceGraph.Families.TryGetValue(serviceType, out var family))
+                {
+                    if (family.CannotBeResolvedMessage.IsNotEmpty())
+                    {
+                        throw new LamarMissingRegistrationException(family);
+                    }
+                }
+                
                 throw new LamarMissingRegistrationException(serviceType);
             }
 
@@ -235,6 +245,17 @@ namespace Lamar.IoC
             return ServiceGraph.FindAll(typeof(T)).Select(x => x.QuickResolve(this)).OfType<T>().ToList();
         }
 
+        public void BuildUp(object target)
+        {
+            var objectType = target.GetType();
+            var constructorInstance = new ConstructorInstance(objectType, objectType, ServiceLifetime.Transient);
+            var setters = constructorInstance.FindSetters(ServiceGraph);
+
+            foreach (var setter in setters)
+            {
+                setter.ApplyQuickBuildProperties(target, this);
+            }
+        }
 
         public IReadOnlyList<T> GetAllInstances<T>()
         {
@@ -376,6 +397,12 @@ namespace Lamar.IoC
             {
                 Disposables.Add(disposable);
             }
+        }
+        
+        public object AddDisposable(object @object)
+        {
+            Disposables.Add((IDisposable) @object);
+            return @object;
         }
 
         public Func<string, T> FactoryByNameFor<T>()

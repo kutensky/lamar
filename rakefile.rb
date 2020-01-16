@@ -1,6 +1,6 @@
 COMPILE_TARGET = ENV['config'].nil? ? "debug" : ENV['config']
 RESULTS_DIR = "results"
-BUILD_VERSION = '3.1.0'
+BUILD_VERSION = '4.1.0'
 
 tc_build_number = ENV["BUILD_NUMBER"]
 build_revision = tc_build_number || Time.new.strftime('5%H%M')
@@ -36,6 +36,7 @@ task :test => [:compile] do
 	sh "dotnet test src/Lamar.Testing/Lamar.Testing.csproj --framework netcoreapp2.1"
 	sh "dotnet test src/Lamar.Testing/Lamar.Testing.csproj --framework netcoreapp3.0"
 	sh "dotnet test src/Lamar.AspNetCoreTests/Lamar.AspNetCoreTests.csproj"
+	sh "dotnet test src/Lamar.AspNetCoreTests.Integration/Lamar.AspNetCoreTests.Integration.csproj"
 	sh "dotnet test src/LamarWithAspNetCore3/LamarWithAspNetCore3.csproj"
 end
 

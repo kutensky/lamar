@@ -28,6 +28,10 @@ Any given call to `ServiceRegistry.Scan()` consists of three different things:
 
 ## Scan the Calling Assembly
 
+<[warning]>
+If you are having any issues with the type scanning using the `TheCallingAssembly()` method, just replace that call with an explicit `Assembly("assembly name")` or `AssemblyContainingType<T>()` call instead of relying on Lamar to walk up the call stack to determine the entry assembly. 
+<[/warning]>
+
 One of the easiest ways to register types is by scanning the assembly your
 registry is placed in. 
 
@@ -36,8 +40,6 @@ find them.
 
 <[sample:scan-calling-assembly]>
 
-**Note that this method is an extension method in the Lamar.Net4 assembly and cannot be used
-if you target PCL compliance.**
 
 ## Search for Assemblies on the File System
 
@@ -95,12 +97,26 @@ that it implements. You could then build a custom `IRegistrationConvention` clas
 
 ## The Default ISomething/Something Convention
 
+_The Lamar team contains some VB6 veterans who hate Hungarian Notation, but can't shake the "I" nomenclature._
+
 The "default" convention simply tries to connect concrete classes to interfaces using
 the I[Something]/[Something] naming convention as shown in this sample:
 
 <[sample:WithDefaultConventions]>
 
-_The Lamar team contains some VB6 veterans who hate Hungarian Notation, but can't shake the "I" nomenclature._
+By default, the behavior is to add new registrations regardless of the existing state of the existing `ServiceRegistry`. In cases where you use a mix of explicit and conventional registrations, or other cases where you use multiple `Scan()` operations, you can control the additive registration behavior as shown below:
+
+<[sample:WithDefaultConventionsOptions]>
+
+<[info]>
+The service lifetime override behavior was added in Lamar v4.1
+<[/info]>
+
+Lastly, you can change the default `Lifetime` of the discovered registrations like this:
+
+<sample:WithDefaultConventionsLifetime>
+
+Otherwise, the default registration will be `Lifetime.Transient`.
 
 ## Registering the Single Implementation of an Interface
 
